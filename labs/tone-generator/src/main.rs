@@ -16,6 +16,8 @@ fn main() {
     let phase_increment = period.recip();
     let mut phase = 0.0;
 
+    println!("sample rate {}", sample_rate);
+
     let output_stream = device
         .build_output_stream::<f32, _, _>(
             &output_config.into(),
