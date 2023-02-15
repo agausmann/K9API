@@ -1,0 +1,82 @@
+use crate::Sample;
+
+/// A utility for buffering the output of a sample generator.
+///
+/// This is useful when the output buffer requirements of a generator do not
+/// match the rate that samples are consumed. It allows the user to consume
+/// any number of bytes at any time, and will call the provided generator
+/// function when more samples are required.
+pub struct Buffer<G> {
+    generator: G,
+    buffer: Box<[Sample]>,
+    chunk_size: usize,
+    position: usize,
+    available: usize,
+}
+
+impl<G> Buffer<G>
+where
+    G: FnMut(&mut [Sample]),
+{
+    /// Construct an empty buffer.
+    ///
+    /// The provided generator function will be called whenever more samples
+    /// are required. It will always be provided with a buffer of size
+    /// `chunk_size`.
+    ///
+    /// This internally heap-allocates a buffer large enough to hold
+    /// `2 * chunk_size` samples. (Worst case is when there are
+    /// `chunk_size - 1` available samples in the buffer, and
+    /// `fill_buffer(chunk_size)` is called, requiring another `chunk_size`
+    /// samples to be appended to the buffer to meet the requested size.
+    pub fn new(generator: G, chunk_size: usize) -> Self {
+        Self {
+            generator,
+            buffer: vec![0.0; 2 * chunk_size].into_boxed_slice(),
+            chunk_size,
+            position: 0,
+            available: 0,
+        }
+    }
+
+    /// The "chunk size" of this buffer; i.e. how many samples it retrieves
+    /// for each call to the generator function.
+    pub fn chunk_size(&self) -> usize {
+        self.chunk_size
+    }
+
+    /// The samples that are currently waiting to be consumed.
+    pub fn available(&self) -> &[Sample] {
+        &self.buffer[self.position..][..self.available]
+    }
+
+    /// Ensure at least `num_samples` are available in the buffer.
+    ///
+    /// After this function returns, `available().len()` will be greater than
+    /// or equal to `num_samples`.
+    ///
+    /// # Requirements
+    ///
+    /// - `num_samples` must be less than or equal to `chunk_size`.
+    pub fn fill_buffer(&mut self, num_samples: usize) {
+        if num_samples > self.available {
+            self.buffer
+                .copy_within(self.position..(self.position + self.available), 0);
+            self.position = 0;
+            (self.generator)(&mut self.buffer[self.available..][..self.chunk_size]);
+            self.available += self.chunk_size;
+        }
+    }
+
+    /// Consume some samples from the buffer.
+    ///
+    /// The first `num_samples` samples in the buffer will be discarded,
+    /// effectively decreaasing the number of available samples by `num_samples`.
+    ///
+    /// # Requirements
+    /// - `num_samples` must be less than or equal to `available().len()`
+    pub fn consume(&mut self, num_samples: usize) {
+        self.available -= num_samples;
+        self.position += num_samples;
+    }
+}

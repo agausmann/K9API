@@ -2,4 +2,5 @@
 members = [
     "labs/bpsk31",
     "labs/tone-generator",
+    "dsp",
 ]
