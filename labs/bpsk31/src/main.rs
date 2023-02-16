@@ -1,16 +1,17 @@
-use k9api_dsp::{amplify, filter::Fir};
-use std::f32::consts::TAU;
+use k9api_dsp::amplify;
+use k9api_dsp::filter::Fir;
+use k9api_dsp::math::{Real, TAU, sin};
 
 fn main() {
     let sample_rate = 8000;
     let carrier_frequency = 800.0;
-    let period = sample_rate as f32 / carrier_frequency;
+    let period = sample_rate as Real / carrier_frequency;
     let phase_increment = period.recip();
     let mut phase = 0.0;
 
     let bytes = b"Hello World";
     let symbol_rate = 31.25;
-    let sps = sample_rate as f32 / symbol_rate;
+    let sps = sample_rate as Real / symbol_rate;
     let mut sample_position = 0.0;
     let mut bit_index = 0;
 
@@ -20,7 +21,7 @@ fn main() {
     let rolloff = 1.0;
     let mut symbol_filter = Fir::raised_cosine(filter_size, rolloff, sps);
 
-    let generate_samples = move |buffer: &mut [f32]| {
+    let generate_samples = move |buffer: &mut [Real]| {
         // Calculate phase offsets
         for slot in buffer.iter_mut() {
             // TODO implement Varicode and differential coding
@@ -45,7 +46,7 @@ fn main() {
         // Generate and modulate carrier
         for slot in buffer.iter_mut() {
             let modulation = *slot;
-            *slot = modulation * (phase * TAU).sin();
+            *slot = modulation * sin(phase * TAU);
             phase = (phase + phase_increment) % 1.0;
         }
 
@@ -57,7 +58,7 @@ fn main() {
     to_wav_file(sample_rate, generate_samples);
 }
 
-fn to_audio_device(sample_rate: u32, mut generator: impl FnMut(&mut [f32]) + Send + 'static) {
+fn to_audio_device(sample_rate: u32, mut generator: impl FnMut(&mut [Real]) + Send + 'static) {
     use cpal::traits::*;
     use cpal::{BufferSize, SampleRate, StreamConfig};
 
@@ -72,7 +73,7 @@ fn to_audio_device(sample_rate: u32, mut generator: impl FnMut(&mut [f32]) + Sen
         buffer_size: BufferSize::Default,
     };
     let output_stream = device
-        .build_output_stream::<f32, _, _>(
+        .build_output_stream::<Real, _, _>(
             &output_config,
             move |buffer, _info| {
                 generator(buffer);
@@ -91,7 +92,7 @@ fn to_audio_device(sample_rate: u32, mut generator: impl FnMut(&mut [f32]) + Sen
     }
 }
 
-fn to_wav_file(sample_rate: u32, mut generator: impl FnMut(&mut [f32])) {
+fn to_wav_file(sample_rate: u32, mut generator: impl FnMut(&mut [Real])) {
     use hound::{WavSpec, WavWriter};
     use std::fs::File;
     use std::io::BufWriter;

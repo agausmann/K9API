@@ -1,5 +1,5 @@
 use crate::filter::Fir;
-use crate::Sample;
+use crate::math::Real;
 
 pub struct Upsample {
     factor: usize,
@@ -11,7 +11,7 @@ impl Upsample {
         Self { factor, filter }
     }
 
-    pub fn process(&mut self, input: &[Sample], output: &mut [Sample]) {
+    pub fn process(&mut self, input: &[Real], output: &mut [Real]) {
         assert_eq!(input.len() * self.factor, output.len());
         output.fill(0.0);
         for (out, inp) in output.chunks_mut(self.factor).zip(input) {
@@ -31,7 +31,7 @@ impl Downsample {
         Self { factor, filter }
     }
 
-    pub fn process(&mut self, input: &[Sample], output: &mut [Sample]) {
+    pub fn process(&mut self, input: &[Real], output: &mut [Real]) {
         assert_eq!(input.len(), output.len() * self.factor);
         for (inp, out) in input.chunks(self.factor).zip(output) {
             *out = self.filter.decimate(inp);

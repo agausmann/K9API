@@ -1,4 +1,4 @@
-use crate::Sample;
+use crate::math::Real;
 
 /// A utility for buffering the output of a sample generator.
 ///
@@ -8,7 +8,7 @@ use crate::Sample;
 /// function when more samples are required.
 pub struct Buffer<G> {
     generator: G,
-    buffer: Box<[Sample]>,
+    buffer: Box<[Real]>,
     chunk_size: usize,
     position: usize,
     available: usize,
@@ -16,7 +16,7 @@ pub struct Buffer<G> {
 
 impl<G> Buffer<G>
 where
-    G: FnMut(&mut [Sample]),
+    G: FnMut(&mut [Real]),
 {
     /// Construct an empty buffer.
     ///
@@ -46,7 +46,7 @@ where
     }
 
     /// The samples that are currently waiting to be consumed.
-    pub fn available(&self) -> &[Sample] {
+    pub fn available(&self) -> &[Real] {
         &self.buffer[self.position..][..self.available]
     }
 

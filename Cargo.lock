@@ -661,6 +661,7 @@ name = "tone-generator"
 version = "0.1.0"
 dependencies = [
  "cpal",
+ "k9api-dsp",
 ]
 
 [[package]]

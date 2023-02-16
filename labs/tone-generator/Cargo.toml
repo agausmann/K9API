@@ -8,3 +8,4 @@ edition = "2021"
 
 [dependencies]
 cpal = "0.15.0"
+k9api-dsp = { version = "0.1.0", path = "../../dsp" }
