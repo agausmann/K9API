@@ -1,6 +1,6 @@
+use k9api_dsp::amplify;
 use k9api_dsp::math::Real;
 use k9api_dsp::wave::Sine;
-use k9api_dsp::amplify;
 
 use cpal::traits::*;
 

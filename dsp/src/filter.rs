@@ -1,4 +1,4 @@
-use crate::math::{Real, rc};
+use crate::math::{rc, Real};
 
 pub struct Fir {
     taps: Box<[Real]>,
