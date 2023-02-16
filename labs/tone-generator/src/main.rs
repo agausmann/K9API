@@ -1,4 +1,6 @@
-use k9api_dsp::math::{Real, TAU, sin};
+use k9api_dsp::math::Real;
+use k9api_dsp::wave::Sine;
+use k9api_dsp::amplify;
 
 use cpal::traits::*;
 
@@ -12,9 +14,7 @@ fn main() {
         .expect("no default output config");
     let sample_rate = output_config.sample_rate().0;
     let tone_frequency = 440.0;
-    let period = sample_rate as Real / tone_frequency;
-    let phase_increment = period.recip();
-    let mut phase = 0.0;
+    let mut sine = Sine::new(sample_rate as Real / tone_frequency, 0.0);
 
     println!("sample rate {}", sample_rate);
 
@@ -22,10 +22,8 @@ fn main() {
         .build_output_stream::<Real, _, _>(
             &output_config.into(),
             move |buffer, _info| {
-                for slot in buffer {
-                    *slot = sin(phase * TAU);
-                    phase = (phase + phase_increment) % 1.0;
-                }
+                sine.fill(buffer);
+                amplify(0.5, buffer);
             },
             |err| {
                 eprintln!("output stream error: {}", err);

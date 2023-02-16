@@ -2,6 +2,7 @@ pub mod buffer;
 pub mod filter;
 pub mod math;
 pub mod resample;
+pub mod wave;
 
 use crate::math::Real;
 

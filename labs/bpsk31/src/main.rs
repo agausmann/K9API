@@ -1,13 +1,12 @@
 use k9api_dsp::amplify;
 use k9api_dsp::filter::Fir;
-use k9api_dsp::math::{Real, TAU, sin};
+use k9api_dsp::math::Real;
+use k9api_dsp::wave::Sine;
 
 fn main() {
     let sample_rate = 8000;
     let carrier_frequency = 800.0;
-    let period = sample_rate as Real / carrier_frequency;
-    let phase_increment = period.recip();
-    let mut phase = 0.0;
+    let mut carrier = Sine::new(sample_rate as Real / carrier_frequency, 0.0);
 
     let bytes = b"Hello World";
     let symbol_rate = 31.25;
@@ -46,8 +45,7 @@ fn main() {
         // Generate and modulate carrier
         for slot in buffer.iter_mut() {
             let modulation = *slot;
-            *slot = modulation * sin(phase * TAU);
-            phase = (phase + phase_increment) % 1.0;
+            *slot = carrier.next() * modulation;
         }
 
         // Attenuation to avoid clipping on filter overshoot
