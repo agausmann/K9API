@@ -11,8 +11,11 @@ fn main() {
     let bytes = b"Hello World";
     let symbol_rate = 31.25;
     let sps = sample_rate as Real / symbol_rate;
+    let mut bits = bytes
+        .iter()
+        .flat_map(|&b| bits(VARICODE[b as usize] << 2))
+        .cycle();
     let mut sample_position = 0.0;
-    let mut bit_index = 0;
 
     // TODO do filtering at a lower sample rate e.g. 1kHz and then resample
     // This will reduce the filter size a lot.
@@ -23,10 +26,9 @@ fn main() {
     let generate_samples = move |buffer: &mut [Real]| {
         // Calculate phase offsets
         for slot in buffer.iter_mut() {
-            // TODO implement Varicode and differential coding
-            let bit = (bytes[bit_index / 8] >> (bit_index % 8)) & 1;
+            // TODO implement differential coding
             if sample_position < 1.0 {
-                *slot = if bit == 0 { -1.0 } else { 1.0 };
+                *slot = if bits.next().unwrap() { -1.0 } else { 1.0 };
             } else {
                 *slot = 0.0;
             }
@@ -34,7 +36,6 @@ fn main() {
             sample_position += 1.0;
             if sample_position >= sps {
                 sample_position -= sps;
-                bit_index = (bit_index + 1) % (bytes.len() * 8);
             }
         }
 
@@ -120,3 +121,52 @@ fn to_wav_file(sample_rate: u32, mut generator: impl FnMut(&mut [Real])) {
     writer.flush().unwrap();
     writer.finalize().unwrap();
 }
+
+fn bits(x: u32) -> impl Iterator<Item = bool> + Clone {
+    // Extract bits, starting from the most significant 1-bit.
+    (0..=x.ilog2()).rev().map(move |i| ((x >> i) & 1) != 0)
+}
+
+#[rustfmt::skip]
+const VARICODE: [u32; 128] = [
+    // 0x00
+    0b1010101011, 0b1011011011, 0b1011101101, 0b1101110111,
+    0b1011101011, 0b1101011111, 0b1011101111, 0b1011111101,
+    0b1011111111, 0b11101111, 0b11101, 0b1101101111,
+    0b1011011101, 0b11111, 0b1101110101, 0b1110101011,
+    // 0x10
+    0b1011110111, 0b1011110101, 0b1110101101, 0b1110101111,
+    0b1101011011, 0b1101101011, 0b1101101101, 0b1101010111,
+    0b1101111011, 0b1101111101, 0b1110110111, 0b1101010101,
+    0b1101011101, 0b1110111011, 0b1011111011, 0b1101111111,
+    // 0x20
+    0b1, 0b111111111, 0b101011111, 0b111110101,
+    0b111011011, 0b1011010101, 0b1010111011, 0b101111111,
+    0b11111011, 0b11110111, 0b101101111, 0b111011111,
+    0b1110101, 0b110101, 0b1010111, 0b110101111,
+    // 0x30
+    0b10110111, 0b10111101, 0b11101101, 0b11111111,
+    0b101110111, 0b101011011, 0b101101011, 0b110101101,
+    0b110101011, 0b110110111, 0b11110101, 0b110111101,
+    0b111101101, 0b1010101, 0b111010111, 0b1010101111,
+    // 0x40
+    0b1010111101, 0b1111101, 0b11101011, 0b10101101,
+    0b10110101, 0b1110111, 0b11011011, 0b11111101,
+    0b101010101, 0b1111111, 0b111111101, 0b101111101,
+    0b11010111, 0b10111011, 0b11011101, 0b10101011,
+    // 0x50
+    0b11010101, 0b111011101, 0b10101111, 0b1101111,
+    0b1101101, 0b101010111, 0b110110101, 0b101011101,
+    0b101110101, 0b101111011, 0b1010101101, 0b111110111,
+    0b111101111, 0b111111011, 0b1010111111, 0b101101101,
+    // 0x60
+    0b1011011111, 0b1011, 0b1011111, 0b101111,
+    0b101101, 0b11, 0b111101, 0b1011011,
+    0b101011, 0b1101, 0b111101011, 0b10111111,
+    0b11011, 0b111011, 0b1111, 0b111,
+    // 0x70
+    0b111111, 0b110111111, 0b10101, 0b10111,
+    0b101, 0b110111, 0b1111011, 0b1101011,
+    0b11011111, 0b1011101, 0b111010101, 0b1010110111,
+    0b110111011, 0b1010110101, 0b1011010111, 0b1110110101,
+];
