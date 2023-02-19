@@ -1,3 +1,5 @@
+use std::iter::repeat;
+
 use k9api_dsp::amplify;
 use k9api_dsp::buffer::Buffer;
 use k9api_dsp::filter::Fir;
@@ -17,13 +19,15 @@ fn main() {
     assert_eq!(premod_sample_rate, 500);
     assert_eq!(sps, 16.0);
 
-    let bytes = b"CQ CQ CQ de K9API K9API K9API pse K";
+    let preamble = repeat(false).take(80);
+    let postamble = repeat(false).take(20).chain(repeat(true).take(30));
+
+    let bytes = b"CQ CQ CQ de K9API K9API K9API pse K\n";
     let mut diff = Differential::new();
-    let mut bits = bytes
-        .iter()
-        .flat_map(|&b| bits(VARICODE[b as usize] << 2))
-        .map(move |bit| diff.process(bit))
-        .cycle();
+    let mut bits = preamble
+        .chain(bytes.iter().flat_map(|&b| bits(VARICODE[b as usize] << 2)))
+        .chain(postamble)
+        .map(move |bit| diff.process(bit));
 
     let filter_size = (sps as usize) * 4 + 1;
     let rolloff = 1.0;
@@ -38,7 +42,11 @@ fn main() {
         debug_assert_eq!(buffer.len(), premod_chunk_size);
 
         filter_buffer.fill(0.0);
-        filter_buffer[0] = if bits.next().unwrap() { -1.0 } else { 1.0 };
+        filter_buffer[0] = match bits.next() {
+            Some(true) => 1.0,
+            Some(false) => -1.0,
+            None => 0.0,
+        };
 
         symbol_filter.process_inplace(&mut filter_buffer);
         amplify(sps, &mut filter_buffer);
@@ -120,7 +128,7 @@ fn to_wav_file(sample_rate: u32, mut generator: impl FnMut(&mut [Real])) {
 
     let mut sample_buffer = vec![0.0; sample_rate as usize / 100];
 
-    for _frame in 0..1000 {
+    for _frame in 0..1500 {
         generator(&mut sample_buffer);
         for &sample in &sample_buffer {
             let converted = (sample * 32767.0) as i16;
@@ -184,17 +192,16 @@ const VARICODE: [u32; 128] = [
 
 #[derive(Clone)]
 struct Differential {
-    prev: bool,
+    acc: bool,
 }
 
 impl Differential {
     fn new() -> Self {
-        Self { prev: false }
+        Self { acc: false }
     }
 
     fn process(&mut self, bit: bool) -> bool {
-        let result = self.prev ^ !bit;
-        self.prev = bit;
-        result
+        self.acc ^= !bit;
+        self.acc
     }
 }
