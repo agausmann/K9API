@@ -9,6 +9,7 @@ use crate::math::Real;
 pub struct Buffer<G> {
     generator: G,
     buffer: Box<[Real]>,
+    buffer_size: usize,
     chunk_size: usize,
     position: usize,
     available: usize,
@@ -25,21 +26,28 @@ where
     /// `chunk_size`.
     ///
     /// This internally heap-allocates a buffer large enough to hold
-    /// `2 * chunk_size` samples. (Worst case is when there are
-    /// `chunk_size - 1` available samples in the buffer, and
-    /// `fill_buffer(chunk_size)` is called, requiring another `chunk_size`
+    /// `buffer_size + chunk_size` samples. (Worst case is when there are
+    /// `buffer_size - 1` available samples in the buffer, and
+    /// `fill_buffer(buffer_size)` is called, requiring another `chunk_size`
     /// samples to be appended to the buffer to meet the requested size.
-    pub fn new(generator: G, chunk_size: usize) -> Self {
+    pub fn new(generator: G, buffer_size: usize, chunk_size: usize) -> Self {
         Self {
             generator,
             buffer: vec![0.0; 2 * chunk_size].into_boxed_slice(),
+            buffer_size,
             chunk_size,
             position: 0,
             available: 0,
         }
     }
 
-    /// The "chunk size" of this buffer; i.e. how many samples it retrieves
+    /// The "buffer size" of this buffer; the maximum size that can be
+    /// requested with `fill_buffer`.
+    pub fn buffer_size(&self) -> usize {
+        self.buffer_size
+    }
+
+    /// The "chunk size" of this buffer; how many samples it retrieves
     /// for each call to the generator function.
     pub fn chunk_size(&self) -> usize {
         self.chunk_size
@@ -57,12 +65,17 @@ where
     ///
     /// # Requirements
     ///
-    /// - `num_samples` must be less than or equal to `chunk_size`.
+    /// - `num_samples` must be less than or equal to `buffer_size.
     pub fn fill_buffer(&mut self, num_samples: usize) {
-        if num_samples > self.available {
-            self.buffer
-                .copy_within(self.position..(self.position + self.available), 0);
-            self.position = 0;
+        if self.available >= num_samples {
+            return;
+        }
+
+        self.buffer
+            .copy_within(self.position..(self.position + self.available), 0);
+        self.position = 0;
+
+        while self.available < num_samples {
             (self.generator)(&mut self.buffer[self.available..][..self.chunk_size]);
             self.available += self.chunk_size;
         }

@@ -1,6 +1,8 @@
 use k9api_dsp::amplify;
+use k9api_dsp::buffer::Buffer;
 use k9api_dsp::filter::Fir;
 use k9api_dsp::math::Real;
+use k9api_dsp::resample::Upsample;
 use k9api_dsp::wave::Sine;
 
 fn main() {
@@ -8,40 +10,49 @@ fn main() {
     let carrier_frequency = 800.0;
     let mut carrier = Sine::new(sample_rate as Real / carrier_frequency, 0.0);
 
-    let bytes = b"Hello World";
+    let premod_factor = 16;
+    let premod_sample_rate = sample_rate / premod_factor;
     let symbol_rate = 31.25;
-    let sps = sample_rate as Real / symbol_rate;
+    let sps = premod_sample_rate as f32 / symbol_rate;
+    assert_eq!(premod_sample_rate, 500);
+    assert_eq!(sps, 16.0);
+
+    let bytes = b"CQ CQ CQ de K9API K9API K9API pse K";
+    let mut diff = Differential::new();
     let mut bits = bytes
         .iter()
         .flat_map(|&b| bits(VARICODE[b as usize] << 2))
+        .map(move |bit| diff.process(bit))
         .cycle();
-    let mut sample_position = 0.0;
 
-    // TODO do filtering at a lower sample rate e.g. 1kHz and then resample
-    // This will reduce the filter size a lot.
     let filter_size = (sps as usize) * 4 + 1;
     let rolloff = 1.0;
     let mut symbol_filter = Fir::raised_cosine(filter_size, rolloff, sps);
+    let mut filter_buffer = vec![0.0; sps as usize];
+
+    let mut upsample = Upsample::new(premod_factor, Fir::linear_interp(premod_factor));
+    let premod_chunk_size = sps as usize * premod_factor;
+    assert_eq!(premod_chunk_size, 256);
+
+    let premod_samples = move |buffer: &mut [Real]| {
+        debug_assert_eq!(buffer.len(), premod_chunk_size);
+
+        filter_buffer.fill(0.0);
+        filter_buffer[0] = if bits.next().unwrap() { -1.0 } else { 1.0 };
+
+        symbol_filter.process_inplace(&mut filter_buffer);
+        amplify(sps, &mut filter_buffer);
+
+        upsample.process(&filter_buffer, buffer);
+    };
+    let mut premod_buffer = Buffer::new(premod_samples, premod_chunk_size, premod_chunk_size);
 
     let generate_samples = move |buffer: &mut [Real]| {
-        // Calculate phase offsets
-        for slot in buffer.iter_mut() {
-            // TODO implement differential coding
-            if sample_position < 1.0 {
-                *slot = if bits.next().unwrap() { -1.0 } else { 1.0 };
-            } else {
-                *slot = 0.0;
-            }
-
-            sample_position += 1.0;
-            if sample_position >= sps {
-                sample_position -= sps;
-            }
+        for chunk in buffer.chunks_mut(premod_chunk_size) {
+            premod_buffer.fill_buffer(chunk.len());
+            chunk.copy_from_slice(&premod_buffer.available()[..chunk.len()]);
+            premod_buffer.consume(chunk.len());
         }
-
-        // Cosine filter
-        symbol_filter.process_inplace(buffer);
-        amplify(sps, buffer);
 
         // Generate and modulate carrier
         for slot in buffer.iter_mut() {
@@ -53,8 +64,8 @@ fn main() {
         amplify(0.5, buffer);
     };
 
-    //to_audio_device(sample_rate, generate_samples);
-    to_wav_file(sample_rate, generate_samples);
+    //to_audio_device(sample_rate as u32, generate_samples);
+    to_wav_file(sample_rate as u32, generate_samples);
 }
 
 fn to_audio_device(sample_rate: u32, mut generator: impl FnMut(&mut [Real]) + Send + 'static) {
@@ -170,3 +181,20 @@ const VARICODE: [u32; 128] = [
     0b11011111, 0b1011101, 0b111010101, 0b1010110111,
     0b110111011, 0b1010110101, 0b1011010111, 0b1110110101,
 ];
+
+#[derive(Clone)]
+struct Differential {
+    prev: bool,
+}
+
+impl Differential {
+    fn new() -> Self {
+        Self { prev: false }
+    }
+
+    fn process(&mut self, bit: bool) -> bool {
+        let result = self.prev ^ !bit;
+        self.prev = bit;
+        result
+    }
+}

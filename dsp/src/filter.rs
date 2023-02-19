@@ -17,6 +17,17 @@ impl Fir {
         }
     }
 
+    pub fn linear_interp(period: usize) -> Self {
+        let half_width = period as isize - 1;
+        let num_taps = half_width as usize * 2 + 1;
+        let taps: Box<[Real]> = (-half_width..=half_width)
+            .map(|t| 1.0 - (t.abs() as f32) / (period as f32))
+            .collect();
+        assert_eq!(taps.len(), num_taps);
+
+        Self::new(taps)
+    }
+
     pub fn raised_cosine(num_taps: usize, rolloff: Real, sps: Real) -> Self {
         // Ensure num_taps is odd
         let num_taps = num_taps | 1;
