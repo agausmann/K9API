@@ -1,5 +1,6 @@
 use crate::math::{rc, Real};
 
+#[derive(Clone)]
 pub struct Fir {
     taps: Box<[Real]>,
     buffer: Box<[Real]>,

@@ -66,6 +66,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bpsk31-demod"
+version = "0.1.0"
+dependencies = [
+ "hound",
+ "k9api-dsp",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

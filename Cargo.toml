@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "labs/bpsk31",
+    "labs/bpsk31-demod",
     "labs/tone-generator",
     "dsp",
 ]

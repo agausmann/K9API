@@ -1,6 +1,7 @@
 pub mod buffer;
 pub mod filter;
 pub mod math;
+pub mod pll;
 pub mod resample;
 pub mod wave;
 
