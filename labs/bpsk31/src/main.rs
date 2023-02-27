@@ -2,6 +2,7 @@ use std::iter::repeat;
 
 use k9api_dsp::amplify;
 use k9api_dsp::buffer::Buffer;
+use k9api_dsp::channel::Awgn;
 use k9api_dsp::filter::Fir;
 use k9api_dsp::math::Real;
 use k9api_dsp::resample::Upsample;
@@ -53,6 +54,8 @@ fn main() {
     };
     let mut premod_buffer = Buffer::new(premod_samples, premod_chunk_size, premod_chunk_size);
 
+    let mut awgn = Awgn::new(0.2);
+
     let generate_samples = move |buffer: &mut [Real]| {
         for chunk in buffer.chunks_mut(premod_chunk_size) {
             premod_buffer.fill_buffer(chunk.len());
@@ -66,8 +69,9 @@ fn main() {
             *slot = carrier.next() * modulation;
         }
 
-        // Attenuation to avoid clipping on filter overshoot
-        amplify(0.5, buffer);
+        // Apply channel model
+        amplify(0.2, buffer);
+        awgn.apply(buffer);
     };
 
     //to_audio_device(sample_rate as u32, generate_samples);

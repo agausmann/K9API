@@ -1,4 +1,5 @@
 pub mod buffer;
+pub mod channel;
 pub mod filter;
 pub mod math;
 pub mod pll;
