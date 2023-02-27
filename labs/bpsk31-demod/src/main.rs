@@ -22,12 +22,12 @@ fn main() {
     for result in wav_file.into_samples() {
         let sample: i16 = result.unwrap();
         let sample = sample as Real / i16::MAX as Real;
-        let (baseband_sample, carrier_sample) = costas.process(sample);
+        let pll_out = costas.process(sample);
         baseband
-            .write_sample((baseband_sample * 32767.0) as i16)
+            .write_sample((pll_out.baseband_i * 32767.0) as i16)
             .unwrap();
         carrier
-            .write_sample((carrier_sample * 32767.0) as i16)
+            .write_sample((pll_out.carrier_i * 32767.0) as i16)
             .unwrap();
     }
 }

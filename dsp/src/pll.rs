@@ -12,6 +12,14 @@ pub struct Costas {
     filter_q: Fir,
 }
 
+pub struct Output {
+    pub baseband_i: Real,
+    pub baseband_q: Real,
+    pub carrier_i: Real,
+    pub carrier_q: Real,
+    pub error: Real,
+}
+
 impl Costas {
     pub fn new(carrier_freq: Real, k: Real, filter: Fir) -> Self {
         Self {
@@ -24,15 +32,21 @@ impl Costas {
         }
     }
 
-    pub fn process(&mut self, sample: Real) -> (Real, Real) {
+    pub fn process(&mut self, sample: Real) -> Output {
         let angle = self.osc_phase * TAU + self.phase_offset;
-        let xi = sample * cos(angle);
-        let xq = sample * -sin(angle);
-        let yi = self.filter_i.process_sample(xi);
-        let yq = self.filter_q.process_sample(xq);
-        let err = yi * yq;
-        self.phase_offset += self.k * err;
+        let carrier_i = cos(angle);
+        let carrier_q = -sin(angle);
+        let baseband_i = self.filter_i.process_sample(carrier_i * sample);
+        let baseband_q = self.filter_q.process_sample(carrier_q * sample);
+        let error = baseband_i * baseband_q;
+        self.phase_offset += self.k * error;
         self.osc_phase = (self.osc_phase + self.carrier_freq) % 1.0;
-        (yi, cos(angle))
+        Output {
+            baseband_i,
+            baseband_q,
+            carrier_i,
+            carrier_q,
+            error,
+        }
     }
 }
