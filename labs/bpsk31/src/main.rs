@@ -49,8 +49,6 @@ fn main() {
         };
 
         symbol_filter.process_inplace(&mut filter_buffer);
-        amplify(sps, &mut filter_buffer);
-
         upsample.process(&filter_buffer, buffer);
     };
     let mut premod_buffer = Buffer::new(premod_samples, premod_chunk_size, premod_chunk_size);

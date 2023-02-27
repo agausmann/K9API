@@ -1,3 +1,4 @@
+use crate::amplify;
 use crate::filter::Fir;
 use crate::math::Real;
 
@@ -18,6 +19,7 @@ impl Upsample {
             out[0] = *inp;
             self.filter.process_inplace(out);
         }
+        amplify(self.factor as Real, output);
     }
 }
 
