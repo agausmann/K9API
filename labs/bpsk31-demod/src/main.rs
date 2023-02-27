@@ -3,8 +3,8 @@ use k9api_dsp::{filter::Fir, math::Real, pll::Costas};
 
 fn main() {
     let wav_file = WavReader::open("bpsk31.wav").expect("cannot open `bpsk31.wav`");
-    let mut symbols =
-        WavWriter::create("symbols.wav", wav_file.spec()).expect("cannot create `symbols.wav`");
+    let mut baseband =
+        WavWriter::create("baseband.wav", wav_file.spec()).expect("cannot create `baseband.wav`");
     let mut carrier =
         WavWriter::create("carrier.wav", wav_file.spec()).expect("cannot create `carrier.wav`");
 
@@ -22,9 +22,9 @@ fn main() {
     for result in wav_file.into_samples() {
         let sample: i16 = result.unwrap();
         let sample = sample as Real / i16::MAX as Real;
-        let (symbol_sample, carrier_sample) = costas.process(sample);
-        symbols
-            .write_sample((symbol_sample * 32767.0) as i16)
+        let (baseband_sample, carrier_sample) = costas.process(sample);
+        baseband
+            .write_sample((baseband_sample * 32767.0) as i16)
             .unwrap();
         carrier
             .write_sample((carrier_sample * 32767.0) as i16)
