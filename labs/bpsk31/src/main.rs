@@ -3,7 +3,7 @@ use std::iter::repeat;
 use k9api_dsp::amplify;
 use k9api_dsp::buffer::Buffer;
 use k9api_dsp::channel::Awgn;
-use k9api_dsp::filter::Fir;
+use k9api_dsp::filter::{Fir, Passband, Window, WindowMethod};
 use k9api_dsp::math::Real;
 use k9api_dsp::resample::Upsample;
 use k9api_dsp::wave::Sine;
@@ -35,7 +35,17 @@ fn main() {
     let mut symbol_filter = Fir::raised_cosine(filter_size, rolloff, sps);
     let mut filter_buffer = vec![0.0; sps as usize];
 
-    let mut upsample = Upsample::new(premod_factor, Fir::linear_interp(premod_factor));
+    let upsample_filter = WindowMethod {
+        gain: 1.0,
+        sample_rate: premod_sample_rate as Real,
+        passband: Passband::LowPass {
+            cutoff: 0.5 * premod_sample_rate as Real,
+        },
+        transition_width: Some(0.5 * premod_sample_rate as Real / 8.0),
+        num_taps: None,
+        window: Window::HAMMING,
+    };
+    let mut upsample = Upsample::new(premod_factor, upsample_filter.build());
     let premod_chunk_size = sps as usize * premod_factor;
     assert_eq!(premod_chunk_size, 256);
 
