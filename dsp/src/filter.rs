@@ -127,22 +127,32 @@ impl Passband {
     }
 
     pub fn sample(&self, x: Real, n: Real, sample_rate: Real) -> Real {
-        let xn = x / n;
-        let xc = 2.0 * xn - 1.0;
+        let xc = x - 0.5 * n;
 
         match self {
-            Self::LowPass { cutoff } => sinc(xc * sample_rate / cutoff),
-            Self::HighPass { cutoff } => sinc(xc) - sinc(xc * sample_rate / cutoff),
+            Self::LowPass { cutoff } => {
+                let bw = 2.0 * cutoff / sample_rate;
+                bw * sinc(bw * xc)
+            }
+            Self::HighPass { cutoff } => {
+                let bw = 2.0 * cutoff / sample_rate;
+                sinc(xc) - bw * sinc(bw * xc)
+            }
             Self::BandPass {
                 low_cutoff,
                 high_cutoff,
-            } => sinc(xc * sample_rate / high_cutoff) - sinc(xc * sample_rate / low_cutoff),
+            } => {
+                let low_bw = 2.0 * low_cutoff / sample_rate;
+                let high_bw = 2.0 * high_cutoff / sample_rate;
+                high_bw * sinc(high_bw * xc) - low_bw * sinc(low_bw * xc)
+            }
             Self::BandReject {
                 low_cutoff,
                 high_cutoff,
             } => {
-                sinc(xc) - sinc(xc * sample_rate / high_cutoff)
-                    + sinc(xc * sample_rate / low_cutoff)
+                let low_bw = 2.0 * low_cutoff / sample_rate;
+                let high_bw = 2.0 * high_cutoff / sample_rate;
+                sinc(xc) - high_bw * sinc(high_bw * xc) + low_bw * sinc(low_bw * xc)
             }
         }
     }
