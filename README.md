@@ -4,6 +4,12 @@ Homemade DSP and SDR software.
 
 Copyright license pending...
 
-## Features
+## Possible future work
 
-- BPSK31 modem (WIP)
+Digital modes:
+
+- PSK31
+- RTTY
+- FT8
+- MFSK/Olivia/Contestia
+- AX.25

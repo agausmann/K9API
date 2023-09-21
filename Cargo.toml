@@ -2,6 +2,7 @@
 members = [
     "labs/bpsk31",
     "labs/bpsk31-demod",
+    "labs/filter-debug",
     "labs/tone-generator",
     "dsp",
 ]
