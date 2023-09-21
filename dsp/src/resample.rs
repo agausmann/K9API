@@ -1,20 +1,21 @@
 use crate::amplify;
 use crate::filter::Fir;
 use crate::math::Real;
+use crate::sample::Sample;
 
-pub struct Upsample {
+pub struct Upsample<T = Real> {
     factor: usize,
-    filter: Fir,
+    filter: Fir<T>,
 }
 
-impl Upsample {
-    pub fn new(factor: usize, filter: Fir) -> Self {
+impl<T: Sample> Upsample<T> {
+    pub fn new(factor: usize, filter: Fir<T>) -> Self {
         Self { factor, filter }
     }
 
-    pub fn process(&mut self, input: &[Real], output: &mut [Real]) {
+    pub fn process(&mut self, input: &[T], output: &mut [T]) {
         assert_eq!(input.len() * self.factor, output.len());
-        output.fill(0.0);
+        output.fill(T::ZERO);
         for (out, inp) in output.chunks_mut(self.factor).zip(input) {
             out[0] = *inp;
             self.filter.process_inplace(out);
@@ -23,17 +24,17 @@ impl Upsample {
     }
 }
 
-pub struct Downsample {
+pub struct Downsample<T = Real> {
     factor: usize,
-    filter: Fir,
+    filter: Fir<T>,
 }
 
-impl Downsample {
-    pub fn new(factor: usize, filter: Fir) -> Self {
+impl<T: Sample> Downsample<T> {
+    pub fn new(factor: usize, filter: Fir<T>) -> Self {
         Self { factor, filter }
     }
 
-    pub fn process(&mut self, input: &[Real], output: &mut [Real]) {
+    pub fn process(&mut self, input: &[T], output: &mut [T]) {
         assert_eq!(input.len(), output.len() * self.factor);
         for (inp, out) in input.chunks(self.factor).zip(output) {
             *out = self.filter.decimate(inp);

@@ -1,4 +1,10 @@
+use crate::sample::Sample;
+
 pub type Real = f32;
+
+impl Sample for Real {
+    const ZERO: Self = 0.0;
+}
 
 #[doc(inline)]
 pub use std::f32::consts::*;

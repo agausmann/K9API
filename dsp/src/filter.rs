@@ -1,16 +1,19 @@
-use crate::math::{cos, rc, sinc, Real, PI, TAU};
+use crate::{
+    math::{cos, rc, sinc, Real, PI, TAU},
+    sample::Sample,
+};
 
 #[derive(Clone)]
-pub struct Fir {
+pub struct Fir<T = Real> {
     taps: Box<[Real]>,
-    buffer: Box<[Real]>,
+    buffer: Box<[T]>,
     position: usize,
 }
 
-impl Fir {
+impl<T: Sample> Fir<T> {
     pub fn new(taps: impl Into<Box<[Real]>>) -> Self {
         let taps = taps.into();
-        let buffer = vec![0.0; taps.len()].into_boxed_slice();
+        let buffer = vec![T::ZERO; taps.len()].into_boxed_slice();
         Self {
             taps,
             buffer,
@@ -41,7 +44,7 @@ impl Fir {
         Self::new(taps)
     }
 
-    pub fn process_sample(&mut self, sample: Real) -> Real {
+    pub fn process_sample(&mut self, sample: T) -> T {
         self.buffer[self.position] = sample;
         self.position = (self.position + 1) % self.buffer.len();
         self.buffer[self.position..]
@@ -52,13 +55,13 @@ impl Fir {
             .sum()
     }
 
-    pub fn process_inplace(&mut self, buffer: &mut [Real]) {
+    pub fn process_inplace(&mut self, buffer: &mut [T]) {
         for slot in buffer {
             *slot = self.process_sample(*slot);
         }
     }
 
-    pub fn decimate(&mut self, buffer: &[Real]) -> Real {
+    pub fn decimate(&mut self, buffer: &[T]) -> T {
         buffer
             .iter()
             .map(|&sample| self.process_sample(sample))
@@ -87,7 +90,7 @@ impl WindowMethod {
         num_taps | 1
     }
 
-    pub fn build(&self) -> Fir {
+    pub fn build<T: Sample>(&self) -> Fir<T> {
         let num_taps = self.num_taps();
 
         let taps: Box<[Real]> = (0..num_taps)

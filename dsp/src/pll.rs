@@ -1,5 +1,6 @@
 use crate::{
     filter::Fir,
+    iq::IQ,
     math::{cos, sin, Real, TAU},
 };
 
@@ -13,10 +14,8 @@ pub struct Costas {
 }
 
 pub struct Output {
-    pub baseband_i: Real,
-    pub baseband_q: Real,
-    pub carrier_i: Real,
-    pub carrier_q: Real,
+    pub baseband: IQ,
+    pub carrier: IQ,
     pub error: Real,
 }
 
@@ -42,10 +41,8 @@ impl Costas {
         self.phase_offset += self.k * error;
         self.osc_phase = (self.osc_phase + self.carrier_freq) % 1.0;
         Output {
-            baseband_i,
-            baseband_q,
-            carrier_i,
-            carrier_q,
+            baseband: IQ::new(baseband_i, baseband_q),
+            carrier: IQ::new(carrier_i, carrier_q),
             error,
         }
     }
