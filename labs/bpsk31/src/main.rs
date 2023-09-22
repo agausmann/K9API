@@ -36,8 +36,7 @@ fn main() {
     let mut filter_buffer = vec![0.0; sps as usize];
 
     let upsample_filter = WindowMethod {
-        // TODO why does the filter attenuate the baseband so much?
-        gain: 4.0,
+        gain: premod_factor as Real,
         sample_rate: sample_rate as Real,
         passband: Passband::LowPass {
             cutoff: 0.5 * premod_sample_rate as Real,
@@ -65,7 +64,7 @@ fn main() {
     };
     let mut premod_buffer = Buffer::new(premod_samples, premod_chunk_size, premod_chunk_size);
 
-    let mut awgn = Awgn::new(0.2);
+    let mut awgn = Awgn::new(0.1);
 
     let generate_samples = move |buffer: &mut [Real]| {
         for chunk in buffer.chunks_mut(premod_chunk_size) {
@@ -81,7 +80,7 @@ fn main() {
         }
 
         // Apply channel model
-        //amplify(0.2, buffer);
+        amplify(0.2, buffer);
         awgn.apply(buffer);
     };
 
