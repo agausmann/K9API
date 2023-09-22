@@ -12,6 +12,21 @@ impl IQ {
     pub fn new(i: Real, q: Real) -> Self {
         Self { i, q }
     }
+
+    pub fn new_polar(phase: Real, magnitude: Real) -> Self {
+        Self {
+            i: magnitude * phase.cos(),
+            q: magnitude * phase.sin(),
+        }
+    }
+
+    pub fn magnitude(&self) -> Real {
+        ((self.i * self.i) + (self.q * self.q)).sqrt()
+    }
+
+    pub fn phase(&self) -> Real {
+        Real::atan2(self.q, self.i)
+    }
 }
 
 impl ops::Add for IQ {
