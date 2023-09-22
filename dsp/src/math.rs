@@ -1,4 +1,4 @@
-use crate::sample::Sample;
+use crate::{iq::IQ, sample::Sample};
 
 pub type Real = f32;
 
@@ -61,4 +61,13 @@ pub fn rrc(t: Real, rolloff: Real, sps: Real) -> Real {
         (Real::sin(PI * tn * (1.0 - rolloff)) + d * Real::cos(PI * tn * (1.0 + rolloff)))
             / (PI * t * (1.0 - d * d))
     }
+}
+
+/// Evaluate the discrete-time Fourier transform at a single frequency.
+pub fn dtft(data: &[Real], sample_rate: Real, freq: Real) -> Real {
+    data.iter()
+        .enumerate()
+        .map(|(i, &h)| IQ::new_polar(freq / sample_rate * (i as Real), h))
+        .sum::<IQ>()
+        .magnitude()
 }
