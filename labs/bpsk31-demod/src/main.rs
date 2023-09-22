@@ -21,7 +21,7 @@ fn main() {
     let mut baseband = WavWriter::create(
         "baseband.wav",
         WavSpec {
-            channels: 1,
+            channels: 2,
             sample_rate: sample_rate / decimation_factor as u32,
             bits_per_sample: 16,
             sample_format: hound::SampleFormat::Int,
@@ -91,6 +91,7 @@ fn main() {
 
     while let Some(bb) = baseband_sample() {
         baseband.write_sample((bb.i * 32767.0) as i16).unwrap();
+        baseband.write_sample((bb.q * 32767.0) as i16).unwrap();
     }
     baseband.flush().unwrap();
     baseband.finalize().unwrap();
