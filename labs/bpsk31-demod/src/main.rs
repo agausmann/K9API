@@ -1,6 +1,7 @@
 use hound::{WavReader, WavSpec, WavWriter};
 use k9api_dsp::{
-    filter::{Passband, Window, WindowMethod},
+    early_late::EarlyLate,
+    filter::{Passband, Window, WindowMethod, Fir},
     iq::IQ,
     math::Real,
     pll::Costas,
@@ -28,6 +29,17 @@ fn main() {
         },
     )
     .expect("cannot create `baseband.wav`");
+
+    let mut symbols = WavWriter::create(
+        "symbols.wav",
+        WavSpec {
+            channels: 2,
+            sample_rate: 31, // 31.25 :(
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        },
+    )
+    .expect("cannot create `symbols.wav`");
 
     let bpf_design = WindowMethod {
         gain: 1.0,
@@ -89,10 +101,23 @@ fn main() {
         Some(output[0])
     };
 
+    let mut matched_filter = Fir::raised_cosine(65, 1.0, 16.0);
+    let mut timing = EarlyLate::new(0.0, 16);
+
     while let Some(bb) = baseband_sample() {
         baseband.write_sample((bb.i * 32767.0) as i16).unwrap();
         baseband.write_sample((bb.q * 32767.0) as i16).unwrap();
+
+
+        if let Some(bit_sample) = timing.process(matched_filter.process_sample(bb)) {
+            // TODO phase correction and value decision
+            // TODO varicode decoding
+            symbols.write_sample((bit_sample.i * 32767.0) as i16).unwrap();
+            symbols.write_sample((bit_sample.q * 32767.0) as i16).unwrap();
+        }
     }
     baseband.flush().unwrap();
     baseband.finalize().unwrap();
+    symbols.flush().unwrap();
+    symbols.finalize().unwrap();
 }
