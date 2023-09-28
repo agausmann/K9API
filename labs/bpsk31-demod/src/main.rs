@@ -1,7 +1,7 @@
 use hound::{WavReader, WavSpec, WavWriter};
 use k9api_dsp::{
     early_late::EarlyLate,
-    filter::{Passband, Window, WindowMethod, Fir},
+    filter::{Fir, Passband, Window, WindowMethod},
     iq::IQ,
     math::Real,
     pll::Costas,
@@ -108,12 +108,15 @@ fn main() {
         baseband.write_sample((bb.i * 32767.0) as i16).unwrap();
         baseband.write_sample((bb.q * 32767.0) as i16).unwrap();
 
-
         if let Some(bit_sample) = timing.process(matched_filter.process_sample(bb)) {
             // TODO phase correction and value decision
             // TODO varicode decoding
-            symbols.write_sample((bit_sample.i * 32767.0) as i16).unwrap();
-            symbols.write_sample((bit_sample.q * 32767.0) as i16).unwrap();
+            symbols
+                .write_sample((bit_sample.i * 32767.0) as i16)
+                .unwrap();
+            symbols
+                .write_sample((bit_sample.q * 32767.0) as i16)
+                .unwrap();
         }
     }
     baseband.flush().unwrap();
