@@ -20,10 +20,6 @@ impl IQ {
         }
     }
 
-    pub fn magnitude(&self) -> Real {
-        ((self.i * self.i) + (self.q * self.q)).sqrt()
-    }
-
     pub fn phase(&self) -> Real {
         Real::atan2(self.q, self.i)
     }
@@ -88,4 +84,8 @@ impl Sum for IQ {
 
 impl Sample for IQ {
     const ZERO: Self = Self { i: 0.0, q: 0.0 };
+
+    fn magnitude(&self) -> Real {
+        ((self.i * self.i) + (self.q * self.q)).sqrt()
+    }
 }

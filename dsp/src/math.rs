@@ -4,6 +4,10 @@ pub type Real = f32;
 
 impl Sample for Real {
     const ZERO: Self = 0.0;
+
+    fn magnitude(&self) -> Real {
+        self.abs()
+    }
 }
 
 #[doc(inline)]

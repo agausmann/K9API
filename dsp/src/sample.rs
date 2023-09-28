@@ -12,4 +12,6 @@ pub trait Sample:
     + Sum
 {
     const ZERO: Self;
+
+    fn magnitude(&self) -> Real;
 }
