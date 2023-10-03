@@ -14,4 +14,6 @@ pub trait Sample:
     const ZERO: Self;
 
     fn magnitude(&self) -> Real;
+
+    fn magnitude_squared(&self) -> Real;
 }

@@ -8,6 +8,10 @@ impl Sample for Real {
     fn magnitude(&self) -> Real {
         self.abs()
     }
+
+    fn magnitude_squared(&self) -> Real {
+        self * self
+    }
 }
 
 #[doc(inline)]

@@ -28,7 +28,9 @@ fn main() {
     let mut bits = preamble
         .chain(bytes.iter().flat_map(|&b| bits(VARICODE[b as usize] << 2)))
         .chain(postamble)
-        .map(move |bit| diff.process(bit));
+        .map(move |bit| Some(diff.process(bit)))
+        .chain(repeat(None).take(30))
+        .cycle();
 
     let filter_size = (sps as usize) * 4 + 1;
     let rolloff = 1.0;
@@ -54,9 +56,9 @@ fn main() {
 
         filter_buffer.fill(0.0);
         filter_buffer[0] = match bits.next() {
-            Some(true) => 1.0,
-            Some(false) => -1.0,
-            None => 0.0,
+            Some(Some(true)) => 1.0,
+            Some(Some(false)) => -1.0,
+            _ => 0.0,
         };
 
         symbol_filter.process_inplace(&mut filter_buffer);
@@ -140,7 +142,7 @@ fn to_wav_file(sample_rate: u32, mut generator: impl FnMut(&mut [Real])) {
 
     let mut sample_buffer = vec![0.0; sample_rate as usize / 100];
 
-    for _frame in 0..1500 {
+    for _frame in 0..10000 {
         generator(&mut sample_buffer);
         for &sample in &sample_buffer {
             let converted = (sample * 32767.0) as i16;

@@ -85,7 +85,11 @@ impl Sum for IQ {
 impl Sample for IQ {
     const ZERO: Self = Self { i: 0.0, q: 0.0 };
 
+    fn magnitude_squared(&self) -> Real {
+        (self.i * self.i) + (self.q * self.q)
+    }
+
     fn magnitude(&self) -> Real {
-        ((self.i * self.i) + (self.q * self.q)).sqrt()
+        self.magnitude_squared().sqrt()
     }
 }
