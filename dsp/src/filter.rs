@@ -65,7 +65,8 @@ impl<T: Sample> Fir<T> {
         buffer
             .iter()
             .map(|&sample| self.process_sample(sample))
-            .sum()
+            .last()
+            .unwrap()
     }
 }
 
