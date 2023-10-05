@@ -35,7 +35,5 @@ impl Agc {
         //     - self.mu
         //         * (sample.magnitude_squared() - self.target_level_squared)
         //         * (sample.magnitude_squared() / self.a);
-
-        dbg!(self.a);
     }
 }
