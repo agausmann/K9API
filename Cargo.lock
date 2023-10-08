@@ -306,6 +306,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "k9api-digi"
+version = "0.1.0"
+
+[[package]]
 name = "k9api-dsp"
 version = "0.1.0"
 dependencies = [
