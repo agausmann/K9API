@@ -1,13 +1,13 @@
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
 use slint::{Image, Rgb8Pixel, SharedPixelBuffer, Timer, TimerMode};
 
 fn main() -> anyhow::Result<()> {
-    let main_window = Arc::new(MainWindow::new()?);
+    let main_window = MainWindow::new()?;
 
     let timer = Timer::default();
     {
-        let main_window = Arc::clone(&main_window);
+        let main_window = main_window.clone_strong();
 
         let mut buffer = SharedPixelBuffer::new(256, 256);
         let mut pixels =
