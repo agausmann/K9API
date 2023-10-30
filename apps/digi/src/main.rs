@@ -6,7 +6,7 @@ use cpal::{
     SampleFormat, SampleRate,
 };
 use rustfft::{num_complex::Complex32, num_traits::Zero, FftPlanner};
-use slint::{Image, Rgb8Pixel, SharedPixelBuffer, Timer, TimerMode};
+use slint::{Color, Image, Rgb8Pixel, SharedPixelBuffer, Timer, TimerMode};
 
 fn main() -> anyhow::Result<()> {
     let main_window = MainWindow::new()?;
@@ -35,6 +35,21 @@ fn main() -> anyhow::Result<()> {
     buffer.make_mut_slice().fill_with(|| pixels.next().unwrap());
 
     let mut fft_buf = vec![Complex32::zero(); 256];
+    let gradient = [
+        Color::from_rgb_u8(0x00, 0x00, 0x20),
+        Color::from_rgb_u8(0x00, 0x00, 0x30),
+        Color::from_rgb_u8(0x00, 0x00, 0x50),
+        Color::from_rgb_u8(0x00, 0x00, 0x91),
+        Color::from_rgb_u8(0x1e, 0x90, 0xff),
+        Color::from_rgb_u8(0xff, 0xff, 0xff),
+        Color::from_rgb_u8(0xff, 0xff, 0x00),
+        Color::from_rgb_u8(0xfe, 0x6d, 0x16),
+        Color::from_rgb_u8(0xff, 0x00, 0x00),
+        Color::from_rgb_u8(0xc6, 0x00, 0x00),
+        Color::from_rgb_u8(0x9f, 0x00, 0x00),
+        Color::from_rgb_u8(0x75, 0x00, 0x00),
+        Color::from_rgb_u8(0x4a, 0x00, 0x00),
+    ];
 
     let input_stream = input_device.build_input_stream(
         &config,
@@ -47,8 +62,13 @@ fn main() -> anyhow::Result<()> {
             fft.process(&mut fft_buf);
             buffer.make_mut_slice().copy_within(0..255 * 256, 256);
             for (a, b) in buffer.make_mut_slice()[..256].iter_mut().zip(&fft_buf) {
-                let x = (b.norm() * 256.0) as u8;
-                *a = Rgb8Pixel::new(x, x, x)
+                // TODO runtime controls for adjusting range
+                let x = (b.norm() / 20.0 + 0.1).clamp(0.0, 0.99999) * (gradient.len() - 1) as f32;
+                let bin = x as usize;
+                let factor = x.fract();
+
+                let color = gradient[bin + 1].mix(&gradient[bin], factor);
+                *a = Rgb8Pixel::new(color.red(), color.green(), color.blue());
             }
             let abuf = buffer.clone();
             audio_main_window
@@ -58,7 +78,15 @@ fn main() -> anyhow::Result<()> {
                 })
                 .ok();
 
-            eprintln!("{}", start.elapsed().as_micros());
+            eprintln!(
+                "{} {}",
+                start.elapsed().as_micros(),
+                fft_buf
+                    .iter()
+                    .map(|z| z.norm())
+                    .max_by(f32::total_cmp)
+                    .unwrap()
+            );
         },
         |err| {
             eprintln!("{:?}", err);
