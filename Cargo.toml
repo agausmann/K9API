@@ -1,6 +1,6 @@
 [workspace]
+resolver = "2"
 members = [
-    "apps/digi",
     "labs/bpsk31",
     "labs/bpsk31-demod",
     "labs/filter-debug",
