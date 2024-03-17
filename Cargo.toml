@@ -5,5 +5,5 @@ members = [
     "labs/bpsk31-demod",
     "labs/filter-debug",
     "labs/tone-generator",
-    "dsp",
+    "dsp", "labs/sdr-fm",
 ]

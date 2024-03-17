@@ -1,5 +1,7 @@
 use std::{iter::Sum, ops};
 
+use num_complex::Complex;
+
 use crate::{math::Real, sample::Sample};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -23,6 +25,13 @@ impl IQ {
     pub fn phase(&self) -> Real {
         Real::atan2(self.q, self.i)
     }
+
+    pub fn conj(&self) -> IQ {
+        Self {
+            i: self.i,
+            q: -self.q,
+        }
+    }
 }
 
 impl ops::Add for IQ {
@@ -44,6 +53,23 @@ impl ops::Sub for IQ {
             i: self.i - rhs.i,
             q: self.q - rhs.q,
         }
+    }
+}
+
+impl ops::Mul for IQ {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self {
+            i: self.i * rhs.i - self.q * rhs.q,
+            q: self.i * rhs.q + self.q * rhs.i,
+        }
+    }
+}
+
+impl ops::MulAssign for IQ {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs;
     }
 }
 
@@ -91,5 +117,11 @@ impl Sample for IQ {
 
     fn magnitude(&self) -> Real {
         self.magnitude_squared().sqrt()
+    }
+}
+
+impl From<Complex<Real>> for IQ {
+    fn from(value: Complex<Real>) -> Self {
+        IQ::new(value.re, value.im)
     }
 }

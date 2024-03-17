@@ -3,6 +3,7 @@ pub mod buffer;
 pub mod channel;
 pub mod early_late;
 pub mod filter;
+pub mod fm;
 pub mod iq;
 pub mod math;
 pub mod pll;
