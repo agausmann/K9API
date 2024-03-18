@@ -1,7 +1,7 @@
 use cpal::traits::*;
 use cpal::SampleRate;
-use k9api_dsp::fm::FmDemod;
 use k9api_dsp::math::PI;
+use k9api_dsp::modem::fm::FmDemod;
 use k9api_dsp::{iq::IQ, math::Real};
 use num_complex::Complex;
 use soapysdr::Device;
