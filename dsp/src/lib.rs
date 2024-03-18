@@ -1,6 +1,7 @@
 pub mod agc;
 pub mod buffer;
 pub mod channel;
+pub mod codec;
 pub mod early_late;
 pub mod filter;
 pub mod iq;
