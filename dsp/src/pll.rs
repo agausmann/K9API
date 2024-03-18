@@ -26,7 +26,8 @@ impl Costas {
     pub fn process(&mut self, sample: Real) -> Output {
         let carrier = self.osc.next_with_offset(self.phase_offset);
         let baseband = self.filter.process_sample(carrier * sample);
-        let error = baseband.i * baseband.q;
+        let bnorm = baseband.unit();
+        let error = bnorm.i * bnorm.q;
         self.phase_offset -= self.k * error;
         Output {
             baseband,

@@ -1,6 +1,5 @@
 use hound::{WavReader, WavSpec, WavWriter};
 use k9api_dsp::{
-    agc::Agc,
     codec::varicode::VaricodeDecode,
     early_late::EarlyLate,
     filter::{Fir, Passband, Window, WindowMethod},
@@ -70,8 +69,6 @@ fn main() {
         baseband.write_sample((bb.q * 32767.0) as i16).unwrap();
 
         if let Some(bit_sample) = timing.process(matched_filter.process_sample(bb)) {
-            af_domain.agc_feedback(bit_sample);
-
             symbols
                 .write_sample((bit_sample.i * 32767.0) as i16)
                 .unwrap();
@@ -97,7 +94,6 @@ fn main() {
 
 struct AFDomain {
     bpf: Fir<Real>,
-    agc: Agc,
     costas: Costas,
     downsample: Downsample<IQ>,
     pll_output: Vec<IQ>,
@@ -114,8 +110,6 @@ impl AFDomain {
             window: Window::HAMMING,
         };
         let bpf = bpf_design.build();
-
-        let agc = Agc::new(0.1, 0.5);
 
         let loop_filter_design = WindowMethod {
             gain: 1.0,
@@ -147,7 +141,6 @@ impl AFDomain {
         let pll_output = vec![IQ::ZERO; decimation_factor];
         Self {
             bpf,
-            agc,
             costas,
             downsample,
             pll_output,
@@ -156,7 +149,6 @@ impl AFDomain {
 
     pub fn process_af(&mut self, buf: &mut [Real]) -> IQ {
         self.bpf.process_inplace(buf);
-        self.agc.process_inplace(buf);
 
         for (pin, pout) in buf.iter().zip(&mut self.pll_output) {
             *pout = self.costas.process(*pin).baseband;
@@ -165,10 +157,6 @@ impl AFDomain {
         let mut output = [IQ::ZERO];
         self.downsample.process(&self.pll_output, &mut output);
         output[0]
-    }
-
-    pub fn agc_feedback<S: Sample>(&mut self, sample: S) {
-        self.agc.feedback(sample);
     }
 }
 

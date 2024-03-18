@@ -32,6 +32,14 @@ impl IQ {
             q: -self.q,
         }
     }
+
+    pub fn unit(&self) -> Self {
+        if *self == Self::ZERO {
+            Self::ZERO
+        } else {
+            *self / self.magnitude()
+        }
+    }
 }
 
 impl ops::Add for IQ {
