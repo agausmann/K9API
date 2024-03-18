@@ -1,9 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "labs/bpsk31",
+    "dsp",
     "labs/bpsk31-demod",
+    "labs/bpsk31",
     "labs/filter-debug",
+    "labs/sdr-fm",
     "labs/tone-generator",
-    "dsp", "labs/sdr-fm",
 ]
